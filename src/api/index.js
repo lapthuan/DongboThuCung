@@ -14,9 +14,206 @@ async function DongBoDuLieu() {
   await DongBoChiNhanh()
   await DongBoKho()
   await DongBoNhanVien()
+  await XoaDongBoChiNhanh()
+  await XoaDongBoNhanVien()
+  await XoaDongBoKho();
 }
 
 setInterval(DongBoDuLieu, 10000)
+
+
+
+async function XoaDongBoChiNhanh() {
+  try {
+    const mySqlCheckQuery = `SELECT * from chinhanh `;
+    const [mySqlCheckResult] = await mysqlConnection.promise().query(mySqlCheckQuery);
+
+    mySqlCheckResult.forEach(async (row) => {
+      const { MaChiNhanh } = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM chinhanh WHERE machinhanh =  '${MaChiNhanh}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const mySqlCheckQuery = `delete from chinhanh where machinhanh = '${MaChiNhanh}' `;
+        await mysqlConnection.promise().query(mySqlCheckQuery);
+
+        console.log(`Xóa dữ liệu ${MaChiNhanh} đồng bộ Mysql`)
+      }
+    })
+
+    const oracleCheckQuery = `SELECT * FROM chinhanh`;
+    const oracleCheckResult = await executeOracleQuery(oracleCheckQuery);
+
+    for (const row of oracleCheckResult.rows) {
+      const [MaChiNhanh, TenChiNhanh, MaTinh] = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM chinhanh WHERE machinhanh =  '${MaChiNhanh}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count === 0) {
+        const oracleDeleteQuery = `DELETE FROM chinhanh WHERE machinhanh = :1`;
+        await executeOracleQuery(oracleDeleteQuery, [MaChiNhanh]);
+
+        console.log(`Xóa dữ liệu ${MaChiNhanh} đồng bộ Oracle`);
+      }
+    }
+    const pgCheckQuery = 'SELECT * FROM chinhanh';
+    const pgCheckResult = await postgresClient.query(pgCheckQuery);
+
+    for (const row of pgCheckResult.rows) {
+      const { machinhanh } = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM chinhanh WHERE machinhanh =  '${machinhanh}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count === 0) {
+        const pgDeleteQuery = 'DELETE FROM chinhanh WHERE machinhanh = $1';
+        await postgresClient.query(pgDeleteQuery, [machinhanh]);
+
+        console.log(`Xóa dữ liệu ${machinhanh} đồng bộ PostgreSQL`);
+      }
+    }
+  } catch (error) {
+    console.error('Error in XoaDongBoNhanVien:', error);
+  }
+
+
+}
+
+async function XoaDongBoNhanVien() {
+  try {
+    // MySQL
+    const mySqlCheckQuery = `SELECT * FROM nhanvien `;
+    const [mySqlCheckResult] = await mysqlConnection.promise().query(mySqlCheckQuery);
+
+    mySqlCheckResult.forEach(async (row) => {
+      const { MaNhanVien } = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM nhanvien WHERE manhanvien = '${MaNhanVien}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const mySqlDeleteQuery = `DELETE FROM nhanvien WHERE manhanvien = ?`;
+        await mysqlConnection.promise().query(mySqlDeleteQuery, [MaNhanVien]);
+
+        console.log(`Xóa dữ liệu ${MaNhanVien} đồng bộ Mysql`);
+      }
+    })
+
+    //Oracle
+    const oracleCheckQuery = `SELECT * FROM nhanvien`;
+    const oracleCheckResult = await executeOracleQuery(oracleCheckQuery);
+
+    for (const row of oracleCheckResult.rows) {
+      const [MaNhanVien, a, b, c] = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM nhanvien WHERE manhanvien = '${MaNhanVien}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const oracleDeleteQuery = `DELETE FROM nhanvien WHERE manhanvien = :1`;
+        await executeOracleQuery(oracleDeleteQuery, [MaNhanVien]);
+
+        console.log(`Xóa dữ liệu ${MaNhanVien} đồng bộ Oracle`);
+      }
+    }
+
+    // PostgreSQL
+    const pgCheckQuery = 'SELECT * FROM nhanvien';
+    const pgCheckResult = await postgresClient.query(pgCheckQuery);
+
+    for (const row of pgCheckResult.rows) {
+      const { manhanvien } = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM nhanvien WHERE manhanvien = '${manhanvien}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const pgDeleteQuery = 'DELETE FROM nhanvien WHERE manhanvien = $1';
+        await postgresClient.query(pgDeleteQuery, [manhanvien]);
+
+        console.log(`Xóa dữ liệu ${manhanvien} đồng bộ PostgreSQL`);
+      }
+    }
+
+  } catch (error) {
+    console.error('Error in XoaDongBoNhanVien:', error);
+    // Rollback transactions if applicable
+  }
+}
+
+async function XoaDongBoKho() {
+  try {
+    // MySQL
+    const mySqlCheckQuery = `SELECT * FROM kho `;
+    const [mySqlCheckResult] = await mysqlConnection.promise().query(mySqlCheckQuery);
+
+    mySqlCheckResult.forEach(async (row) => {
+      const { MaKho } = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM kho WHERE makho = '${MaKho}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const mySqlDeleteQuery = `DELETE FROM kho WHERE makho = ?`;
+        await mysqlConnection.promise().query(mySqlDeleteQuery, [MaKho]);
+
+        console.log(`Xóa dữ liệu ${MaKho} đồng bộ Mysql`);
+      }
+    })
+
+    // Oracle
+    const oracleCheckQuery = `SELECT * FROM kho`;
+    const oracleCheckResult = await executeOracleQuery(oracleCheckQuery);
+
+    for (const row of oracleCheckResult.rows) {
+      const [MaKho, a, b] = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM kho WHERE makho = '${MaKho}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const oracleDeleteQuery = `DELETE FROM kho WHERE makho = :1`;
+        await executeOracleQuery(oracleDeleteQuery, [MaKho]);
+
+        console.log(`Xóa dữ liệu ${MaKho} đồng bộ Oracle`);
+      }
+    }
+
+    // PostgreSQL
+    const pgCheckQuery = 'SELECT * FROM kho';
+    const pgCheckResult = await postgresClient.query(pgCheckQuery);
+
+    for (const row of pgCheckResult.rows) {
+      const { makho } = row;
+
+      const sqlServerQuery = `SELECT COUNT(*) as count FROM kho WHERE makho = '${makho}'`;
+      const sqlServerResult = await sqlPool.request().query(sqlServerQuery);
+      const dataToInsert = sqlServerResult.recordset;
+
+      if (dataToInsert[0].count == 0) {
+        const pgDeleteQuery = 'DELETE FROM kho WHERE makho = $1';
+        await postgresClient.query(pgDeleteQuery, [makho]);
+
+        console.log(`Xóa dữ liệu ${makho} đồng bộ PostgreSQL`);
+      }
+    }
+
+  } catch (error) {
+    console.error('Error in XoaDongBoKho:', error);
+    // Rollback transactions if applicable
+  }
+}
+
 
 
 async function DongBoChiNhanh() {
